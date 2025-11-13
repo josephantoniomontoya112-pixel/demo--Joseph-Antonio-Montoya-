@@ -1,216 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <title>Budget and Expense Tracker</title>
+
   <style>
-    /* Basic styling for the page */
+
     body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f4f4;
-    }
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #fafafa;
+  color: #333;
+}
 
-    /* Styling for each page section */
-    .page {
-      display: none; /* Hide by default */
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      border-radius: 8px;
-    }
+.page {
+  display: none;
+  max-width: 500px;
+  margin: 20px auto;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #ccc;
+}
 
-    .active {
-      display: block; /* Show when active */
-    }
+.active {
+  display: block;
+}
 
-    h1, h2 {
-      color: #333;
-    }
+h1, h2, h3 {
+  margin-top: 0;
+}
 
-    input, select, button {
-      margin: 5px 0;
-      padding: 8px;
-      width: 100%;
-    }
+label {
+  font-weight: bold;
+  display: block;
+  margin-top: 10px;
+}
 
-    ul {
-      list-style: none;
-      padding: 0;
-    }
+input, select, button {
+  margin: 5px 0;
+  padding: 5px;
+  width: 100%;
+  border: 1px solid #ccc;
+}
 
-    li {
-      background: #e2e2e2;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 4px;
-    }
+button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+}
 
-    button {
-      cursor: pointer;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-    }
+button.reset {
+  background: #dc3545;
+  color: #fff;
+}
 
-    button.reset {
-      background-color: #dc3545;
-    }
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+p {
+  margin: 5px 0;
+}
+
+
   </style>
+
 </head>
+
 <body>
 
-  <!-- Page 1: Welcome screen -->
+  <!-- front page -->
   <div id="introPage" class="page active">
-    <h1>Welcome to Budget and Expense Tracker</h1>
-    <p>This tool helps you manage your money by tracking expenses and budget.</p>
-    <button onclick="goToTracker()">Continue to Tracker</button>
+    <h1>Budget and Expense Tracker</h1>
+    <p>Track your expenses and manage your budget easily.</p>
+    <button onclick="goToTracker()">Start Tracking</button>
   </div>
 
-  <!-- Page 2: Main tracker interface -->
+  <!-- the system -->
   <div id="trackerPage" class="page">
     <h2>Budget and Expense Tracker</h2>
 
-    <!-- Input for budget -->
     <label>Budget Amount:</label>
     <input type="number" id="budget" placeholder="Enter your total budget" />
 
-    <!-- Inputs for adding an expense -->
     <h3>Add Expense</h3>
     <input type="text" id="desc" placeholder="Expense Description" />
     <input type="number" id="amount" placeholder="Amount" />
-    <input type="date" id="date" />
+
+    <select id="timeframe">
+      <option value="Day">Day</option>
+      <option value="Week">Week</option>
+      <option value="Month">Month</option>
+    </select>
+
     <select id="category">
       <option value="Food">Food</option>
       <option value="Transport">Transport</option>
       <option value="Entertainment">Entertainment</option>
       <option value="Other">Other</option>
+      <option value="Budget">Budget</option>
     </select>
     <button onclick="addExpense()">Add Expense</button>
 
-    <!-- List of expenses -->
     <h3>Expenses</h3>
     <ul id="expenseList"></ul>
 
-    <!-- Summary section -->
     <h3>Summary</h3>
     <p>Total Expenses: <span id="total">0</span></p>
     <p>Remaining Budget: <span id="remaining">0</span></p>
 
-    <!-- Reset button -->
     <button class="reset" onclick="resetTracker()">Reset All</button>
   </div>
 
   <script>
-    // Variables to store budget and expenses
     let budget = 0;
     let expenses = [];
 
-    // Load saved data from localStorage when page opens
     window.addEventListener("DOMContentLoaded", () => {
       const savedBudget = localStorage.getItem("budget");
       const savedExpenses = localStorage.getItem("expenses");
-
-      if (savedBudget) {
-        budget = parseFloat(savedBudget);
-        document.getElementById("budget").value = budget;
-      }
-
-      if (savedExpenses) {
-        expenses = JSON.parse(savedExpenses);
-        displayExpenses();
-      }
-
+      if (savedBudget) budget = parseFloat(savedBudget);
+      if (savedExpenses) { expenses = JSON.parse(savedExpenses); displayExpenses(); }
       updateSummary();
     });
 
-    // Switch from intro page to tracker page
     function goToTracker() {
       document.getElementById('introPage').classList.remove('active');
       document.getElementById('trackerPage').classList.add('active');
     }
 
-    // Update total and remaining budget
     function updateSummary() {
-      let total = 0;
-      for (let i = 0; i < expenses.length; i++) {
-        total += expenses[i].amount;
-      }
+      let total = expenses.reduce((sum, e) => sum + e.amount, 0);
       document.getElementById('total').textContent = total.toFixed(2);
-      document.getElementById('remaining').textContent = (budget - total).toFixed(2);
+      let remaining = budget - total;
+      if (remaining < 0) remaining = 0;
+      document.getElementById('remaining').textContent = remaining.toFixed(2);
     }
 
-    // Add a new expense
     function addExpense() {
-      const desc = document.getElementById('desc').value;
-      const amount = parseFloat(document.getElementById('amount').value);
-      const date = document.getElementById('date').value;
-      const category = document.getElementById('category').value;
+      let newBudget = parseFloat(document.getElementById('budget').value) || 0;
+      if (newBudget > 0) {
+        budget += newBudget;
+        localStorage.setItem("budget", budget);
+        document.getElementById('budget').value = '';
+      }
 
-      // Check if all fields are filled
-      if (!desc || isNaN(amount) || !date) {
-        alert("Please fill out all fields.");
+      const desc = document.getElementById('desc').value || "No description";
+      const amount = parseFloat(document.getElementById('amount').value) || 0;
+      const timeframe = document.getElementById('timeframe').value;
+      const category = document.getElementById('category').value || "Other";
+
+      let total = expenses.reduce((sum, e) => sum + e.amount, 0);
+      if (total + amount > budget) {
+        alert("Cannot add expense: it exceeds your remaining budget!");
         return;
       }
 
-      // Create expense object and add to list
-      const expense = { description: desc, amount: amount, date: date, category: category };
+      const expense = { description: desc, amount: amount, timeframe: timeframe, category: category };
       expenses.push(expense);
-
-      // Save to localStorage
       localStorage.setItem("expenses", JSON.stringify(expenses));
-
-      // Show updated list and summary
-      displayExpenses();
+      displayExpenses(); 
       updateSummary();
 
-      // Clear input fields
       document.getElementById('desc').value = '';
       document.getElementById('amount').value = '';
-      document.getElementById('date').value = '';
+      document.getElementById('timeframe').value = 'Day';
       document.getElementById('category').value = 'Food';
     }
 
-    // Display all expenses in the list
     function displayExpenses() {
       const list = document.getElementById('expenseList');
-      list.innerHTML = ''; // Clear old list
-
-      for (let i = 0; i < expenses.length; i++) {
-        const item = expenses[i];
+      list.innerHTML = '';
+      expenses.forEach(item => {
         const li = document.createElement('li');
-        li.textContent = `${item.date} - ${item.description} (${item.category}): ₱${item.amount.toFixed(2)}`;
+        li.textContent = `${item.timeframe} - ${item.description} (${item.category}): ₱${item.amount.toFixed(2)}`;
         list.appendChild(li);
-      }
+      });
     }
 
-    // Reset everything
     function resetTracker() {
       if (confirm("Are you sure you want to reset all data?")) {
-        budget = 0;
-        expenses = [];
-        localStorage.clear(); // clear localStorage
-
+        budget = 0; expenses = []; localStorage.clear();
         document.getElementById('budget').value = '';
         document.getElementById('desc').value = '';
         document.getElementById('amount').value = '';
-        document.getElementById('date').value = '';
+        document.getElementById('timeframe').value = 'Day';
         document.getElementById('category').value = 'Food';
         document.getElementById('expenseList').innerHTML = '';
         document.getElementById('total').textContent = '0';
         document.getElementById('remaining').textContent = '0';
       }
     }
-
-    // Update budget when user enters a value
-    document.getElementById('budget').addEventListener('change', function() {
-      budget = parseFloat(this.value) || 0;
-      localStorage.setItem("budget", budget); // Save budget to localStorage
-      updateSummary();
-    });
   </script>
 </body>
 </html>
