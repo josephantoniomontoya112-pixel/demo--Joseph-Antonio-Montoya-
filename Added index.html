@@ -2,80 +2,48 @@
 <html lang="en">
 
 <head>
-
   <title>Budget and Expense Tracker</title>
-
   <style>
-
     body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #fafafa;
-  color: #333;
-}
-
-.page {
-  display: none;
-  max-width: 500px;
-  margin: 20px auto;
-  padding: 10px;
-  background: #fff;
-  border: 1px solid #ccc;
-}
-
-.active {
-  display: block;
-}
-
-h1, h2, h3 {
-  margin-top: 0;
-}
-
-label {
-  font-weight: bold;
-  display: block;
-  margin-top: 10px;
-}
-
-input, select, button {
-  margin: 5px 0;
-  padding: 5px;
-  width: 100%;
-  border: 1px solid #ccc;
-}
-
-button {
-  background: #007bff;
-  color: #fff;
-  border: none;
-}
-
-button.reset {
-  background: #dc3545;
-  color: #fff;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-li {
-  padding: 5px;
-  border-bottom: 1px solid #ccc;
-}
-
-p {
-  margin: 5px 0;
-}
-
-
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #fafafa;
+      color: #333;
+    }
+    .page {
+      display: none;
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+    }
+    .active { display: block; }
+    h1, h2, h3 { margin-top: 0; }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, select, button {
+      margin: 5px 0;
+      padding: 5px;
+      width: 100%;
+      border: 1px solid #ccc;
+    }
+    button { background: #007bff; color: #fff; border: none; }
+    button.reset { background: #dc3545; color: #fff; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 5px; border-bottom: 1px solid #ccc; }
+    p { margin: 5px 0; }
+    .action-btn {
+      margin-left: 10px;
+      padding: 2px 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .delete-btn { background: #dc3545; }
+    .update-btn { background: #28a745; }
   </style>
-
 </head>
 
 <body>
-
   <!-- front page -->
   <div id="introPage" class="page active">
     <h1>Budget and Expense Tracker</h1>
@@ -108,6 +76,9 @@ p {
       <option value="Budget">Budget</option>
     </select>
     <button onclick="addExpense()">Add Expense</button>
+
+    <h3>Search Expenses</h3>
+    <input type="text" id="searchBox" placeholder="Search by description or category" onkeyup="searchExpenses()" />
 
     <h3>Expenses</h3>
     <ul id="expenseList"></ul>
@@ -175,14 +146,66 @@ p {
       document.getElementById('category').value = 'Food';
     }
 
-    function displayExpenses() {
+    function displayExpenses(filtered = null) {
       const list = document.getElementById('expenseList');
       list.innerHTML = '';
-      expenses.forEach(item => {
+      (filtered || expenses).forEach((item, index) => {
         const li = document.createElement('li');
         li.textContent = `${item.timeframe} - ${item.description} (${item.category}): ₱${item.amount.toFixed(2)}`;
+        
+        // Update button
+        const updateBtn = document.createElement('button');
+        updateBtn.textContent = "Update";
+        updateBtn.className = "action-btn update-btn";
+        updateBtn.onclick = () => updateExpense(index);
+
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = "Delete";
+        deleteBtn.className = "action-btn delete-btn";
+        deleteBtn.onclick = () => deleteExpense(index);
+
+        li.appendChild(updateBtn);
+        li.appendChild(deleteBtn);
         list.appendChild(li);
       });
+    }
+
+    function searchExpenses() {
+      const query = document.getElementById('searchBox').value.toLowerCase();
+      const filtered = expenses.filter(e =>
+        e.description.toLowerCase().includes(query) ||
+        e.category.toLowerCase().includes(query)
+      );
+      displayExpenses(filtered);
+    }
+
+    function updateExpense(index) {
+      const expense = expenses[index];
+      const newDesc = prompt("Update description:", expense.description);
+      const newAmount = parseFloat(prompt("Update amount:", expense.amount)) || expense.amount;
+      const newCategory = prompt("Update category:", expense.category) || expense.category;
+
+      // Check budget constraint
+      let totalWithoutCurrent = expenses.reduce((sum, e, i) => i === index ? sum : sum + e.amount, 0);
+      if (totalWithoutCurrent + newAmount > budget) {
+        alert("Cannot update expense: new amount exceeds your remaining budget!");
+        return;
+      }
+
+      expenses[index] = { ...expense, description: newDesc, amount: newAmount, category: newCategory };
+      localStorage.setItem("expenses", JSON.stringify(expenses));
+      displayExpenses();
+      updateSummary();
+    }
+
+    function deleteExpense(index) {
+      if (confirm("Delete this expense?")) {
+        expenses.splice(index, 1);
+        localStorage.setItem("expenses", JSON.stringify(expenses));
+        displayExpenses();
+        updateSummary();
+      }
     }
 
     function resetTracker() {
